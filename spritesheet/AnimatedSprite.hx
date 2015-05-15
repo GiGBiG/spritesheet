@@ -122,60 +122,64 @@ class AnimatedSprite extends Sprite {
 	
 	public function update (deltaTime:Int):Void {
 		
-		if (!behaviorComplete) {
-			
-			timeElapsed += deltaTime;
-			
-			var ratio = timeElapsed / loopTime;
-			
-			if (ratio >= 1) {
+		if (currentBehavior != null) {
+		
+			if (!behaviorComplete) {
 				
-				if (currentBehavior.loop) {
+				timeElapsed += deltaTime;
+				
+				var ratio = timeElapsed / loopTime;
+				
+				if (ratio >= 1) {
 					
-					ratio -= Math.floor (ratio);
+					if (currentBehavior.loop) {
+						
+						ratio -= Math.floor (ratio);
+						
+					} else {
+						
+						behaviorComplete = true;
+						ratio = 1;
+						
+					}
 					
-				} else {
+				}
+				
+				// Number of frames in the animation
+				var frameCount = currentBehavior.frames.length;
+				// Duration in ms of a single frame
+				var frameDuration:Int = Math.round(loopTime / frameCount);
+				// This is the number of ms we have been in this animation
+				var timeInAnimation:Int = timeElapsed % loopTime;
+				// The raw frame index is the number of frames we have had time to show
+				var rawFrameIndex:Int = Math.round(timeInAnimation / frameDuration);
+				// Make sure we loop correctly
+				currentFrameIndex = rawFrameIndex % frameCount;
+				
+				var frame = spritesheet.getFrame (currentBehavior.frames [currentFrameIndex]);
+				
+				
+				bitmap.bitmapData = frame.bitmapData;
+				bitmap.smoothing = smoothing;
+				bitmap.x = frame.offsetX - currentBehavior.originX;
+				bitmap.y = frame.offsetY - currentBehavior.originY;
+				
+				if (behaviorComplete) {
 					
-					behaviorComplete = true;
-					ratio = 1;
+					if (behaviorQueue.length > 0) {
+						
+						updateBehavior (behaviorQueue.shift ());
+						
+					} else if (hasEventListener (Event.COMPLETE)) {
+						
+						dispatchEvent (new Event (Event.COMPLETE));
+						
+					}		
 					
 				}
 				
 			}
-			
-			// Number of frames in the animation
-			var frameCount = currentBehavior.frames.length;
-			// Duration in ms of a single frame
-			var frameDuration:Int = Math.round(loopTime / frameCount);
-			// This is the number of ms we have been in this animation
-			var timeInAnimation:Int = timeElapsed % loopTime;
-			// The raw frame index is the number of frames we have had time to show
-			var rawFrameIndex:Int = Math.round(timeInAnimation / frameDuration);
-			// Make sure we loop correctly
-			currentFrameIndex = rawFrameIndex % frameCount;
-			
-			var frame = spritesheet.getFrame (currentBehavior.frames [currentFrameIndex]);
-			
-			
-			bitmap.bitmapData = frame.bitmapData;
-			bitmap.smoothing = smoothing;
-			bitmap.x = frame.offsetX - currentBehavior.originX;
-			bitmap.y = frame.offsetY - currentBehavior.originY;
-			
-			if (behaviorComplete) {
-				
-				if (behaviorQueue.length > 0) {
-					
-					updateBehavior (behaviorQueue.shift ());
-					
-				} else if (hasEventListener (Event.COMPLETE)) {
-					
-					dispatchEvent (new Event (Event.COMPLETE));
-					
-				}		
-				
-			}
-			
+		
 		}
 		
 	}
